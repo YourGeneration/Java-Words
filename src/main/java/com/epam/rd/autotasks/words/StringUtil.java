@@ -56,98 +56,112 @@ public class StringUtil {
         if(path == null) return null;
         if(path.length() == 0) return null;
         if(path.contains("/") && path.contains("\\")) return null;
+
+        //Unix
+        //pattern starting with ~
+        Pattern pattern1 = Pattern.compile("(^~(/+([a-zA-Z \\. \\_ \\d]{1,}))*/?)");
+        Predicate<String> predicate1 = pattern1.asMatchPredicate();
+
+        //pattern starting with /
+        Pattern pattern2 = Pattern.compile("(^/(/*([a-zA-Z \\. \\_ \\d]{1,}))*/?)");
+        Predicate<String> predicate2 = pattern2.asMatchPredicate();
+
+        //pattrn starting with letters
+        Pattern pattern3 = Pattern.compile("(^[a-zA-Z](/*([a-zA-Z \\. \\_ \\d]{1,}))*/?)");
+        Predicate<String> predicate3 = pattern3.asMatchPredicate();
+
+        //pattern starting with . or ..
+        Pattern pattern4 = Pattern.compile("(^\\.{1,2}(/{1}([a-zA-Z \\. \\_ \\d]{1,}))*/?)");
+        Predicate<String> predicate4 = pattern4.asMatchPredicate();
+
+        //Windows
+        //pattern starting with C:\User
+        Pattern pattern9 = Pattern.compile("(^C\\u003A\\u005CUser(\\u005C+([a-zA-Z \\. \\_ \\d]{1,}))*\\u005C?)");
+        Predicate<String> predicate9 = pattern9.asMatchPredicate();
+
+        //pattern starting with C:
+        Pattern pattern8 = Pattern.compile("(^C\\u003A(\\u005C*([a-zA-Z \\. \\_ \\d]{1,}))*\\u005C?)");
+        Predicate<String> predicate8 = pattern8.asMatchPredicate();
+
+        //pattern starting with letters
+        Pattern pattern7 = Pattern.compile("(^[a-zA-Z](\\u005C*([a-zA-Z \\. \\_ \\d]{1,}))*\\u005C?)");
+        Predicate<String> predicate7 = pattern7.asMatchPredicate();
+
+        //pattrn starting with \
+        Pattern pattern6 = Pattern.compile("(^\\u005C+(\\u005C*([a-zA-Z \\. \\_ \\d]{1,}))*\\u005C?)");
+        Predicate<String> predicate6 = pattern6.asMatchPredicate();
+
+        //pattern starting with . or ..
+        Pattern pattern5 = Pattern.compile("(^\\.{1,2}(\\u005C{1}([a-zA-Z \\. \\_ \\d]{1,}))*\\u005C?)");
+        Predicate<String> predicate5 = pattern5.asMatchPredicate();
+        
        
-
         if(toWin){ 
-            //from Unix to windows
-
-            //pattern starting with ~
-            Pattern pattern1 = Pattern.compile("(^~(/+([a-zA-Z \\. \\_ \\d]{1,}))*/?)");
-            Predicate<String> predicate1 = pattern1.asMatchPredicate();
-
-            //pattern starting with /
-            Pattern pattern2 = Pattern.compile("(^/(/*([a-zA-Z \\. \\_ \\d]{1,}))*/?)");
-            Predicate<String> predicate2 = pattern2.asMatchPredicate();
-
-            //pattrn starting with letters
-            Pattern pattern3 = Pattern.compile("(^[a-zA-Z](/*([a-zA-Z \\. \\_ \\d]{1,}))*/?)");
-            Predicate<String> predicate3 = pattern3.asMatchPredicate();
-
-            //pattern starting with . or ..
-            Pattern pattern4 = Pattern.compile("(^\\.{1,2}(/{1}([a-zA-Z \\. \\_ \\d]{1,}))*/?)");
-            Predicate<String> predicate4 = pattern4.asMatchPredicate();
-
+            //from unix to windows
+            //pattern if ends with /
+            Pattern end = Pattern.compile(".*/");
+            Predicate<String> predicateEnd = end.asMatchPredicate();
             if(predicate1.test(path)){
                 //starting with ~
-                if(path.charAt(path.length()-1)=='/'){ //if ends with /
-                    String newPath = "";
-                    for(int i = 1;i<path.length();i++) newPath+=path.charAt(i);
-
-                    newPath = winChange(newPath);
-                    return "C:\\User" + newPath + "\\";
-                }
                 String newPath = "";
                 for(int i = 1;i<path.length();i++) newPath+=path.charAt(i);
-
                 newPath = winChange(newPath);
-                return "C:\\User" + newPath;
+                if(predicateEnd.test(path)) return "C:\\User" + newPath + "\\";
+                else return "C:\\User" + newPath;
             }
             else if(predicate2.test(path)){
                 //starting with /
-                if(path.charAt(path.length()-1)=='/'){ //if ends with /
-                    path = winChange(path);
-                    return "C:" + path + "\\"; 
-                }
-                path = winChange(path);
-                return "C:" + path;
+                String newPath = winChange(path);
+                if(predicateEnd.test(path)) return "C:" + newPath + "\\"; 
+                else return "C:" + newPath;
             }
-            else if(predicate3.test(path)){
-                //starting with letters
-                if(path.charAt(path.length()-1)=='/'){ //if ends with /
-                    path = winChange(path);
-                    return path + "\\"; 
-                }
-                path = winChange(path);
-                return path;
+            else if(predicate3.test(path) || predicate4.test(path)){
+                //starting with letters or dots
+                String newPath = winChange(path);
+                if(predicateEnd.test(path)) return newPath + "\\"; 
+                else return newPath;
             }
-            else if(predicate4.test(path)){
-                //starting with . or ..
-                if(path.charAt(path.length()-1)=='/'){ //if ends with /
-                    path = winChange(path);
-                    return path + "\\"; 
-                }
-                path = winChange(path);
+            else if(predicate5.test(path)||predicate6.test(path)||predicate7.test(path)||predicate8.test(path)||predicate9.test(path)){
                 return path;
             }
             else{
                 return null;
             }
-
         }
         else{
             //from windows to unix
-            if(countMatches(path, ':') > 1) return null;
-            if(countMatches(path, '\\') == 0) return path;
-            
-
-            
-            Pattern pattern = Pattern.compile("[\\\\]");
-            String[] splitWords = pattern.split(path);
-
-            List<String> list = new LinkedList<String>();
-            for(int i = 0; i < splitWords.length; i++){
-                if(splitWords[i].equals("")) continue;
-                else list.add(splitWords[i]);
+            //pattern if ends with \
+            Pattern end = Pattern.compile(".*\\u005C");
+            Predicate<String> predicateEnd = end.asMatchPredicate();
+            if(predicate9.test(path)){
+                //starting with C:\User
+                String newPath = "";
+                for(int i = 7;i<path.length();i++) newPath+=path.charAt(i);
+                newPath = uniChange(newPath);
+                if(predicateEnd.test(path)) return "~" + newPath + "/";
+                else return "~" + newPath;
             }
-
-            if(list.contains("C:")){
-                list.add(0, "~");
-                list.remove("C:");
-                list.remove("User");
+            else if(predicate8.test(path)){
+                //starting with C:\
+                String newPath = "";
+                for(int i = 2;i<path.length();i++) newPath+=path.charAt(i);
+                newPath = uniChange(newPath);
+                if(predicateEnd.test(path)) return  newPath + "/";
+                else return newPath;
             }
-
-            String result = list.stream().collect(Collectors.joining("/","",""));
-            return result;
+            else if(predicate7.test(path) || predicate6.test(path) || predicate5.test(path)){
+                //starting with letter, . or \
+                String newPath = "";
+                newPath = uniChange(path);
+                if(predicateEnd.test(path)) return newPath + "/"; 
+                else return newPath;
+            }
+            else if(predicate1.test(path)||predicate2.test(path)||predicate3.test(path)||predicate4.test(path)){
+                return path;
+            }
+            else{
+                return null;
+            }
         }
         
     }
@@ -165,12 +179,17 @@ public class StringUtil {
         return result;
     }
 
-    private static int countMatches(String text, char match){
-        int counter = 0;
-        for(int i = 0; i < text.length(); i++){
-            if(text.charAt(i) == match) counter++;
+    private static String uniChange(String path){
+        //changing from "/"" to "\""
+        Pattern pattern = Pattern.compile("[\\\\]");
+        String[] splitWords = pattern.split(path);
+
+        List<String> list = new LinkedList<String>();
+        for(int i = 0; i < splitWords.length; i++){
+            list.add(splitWords[i]);
         }
-        return counter;
+        String result = list.stream().collect(Collectors.joining("/","",""));
+        return result;
     }
 
     public static String joinWords(String[] words) {
