@@ -1,6 +1,7 @@
 package com.epam.rd.autotasks.words;
 
 import java.util.Arrays;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
@@ -18,7 +19,8 @@ public class StringUtil {
         if(sample.length() == 0 || words.length == 0) return 0;
 
         //setting a pattern
-        sample = sample.trim();
+        sample = sample.stripLeading();
+        sample = sample.stripTrailing();
         Pattern pattern = Pattern.compile("\\s*" + sample + "\\s*", Pattern.CASE_INSENSITIVE);
 
         //checking number of words from words array that are equal to sample
